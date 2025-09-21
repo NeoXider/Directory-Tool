@@ -135,7 +135,7 @@ class DirectoryScanner:
         entries: List[DirectoryNode] = []
         try:
             raw_entries = list(os.scandir(path))
-        except PermissionError:
+        except OSError:
             return entries
         raw_entries.sort(key=_sort_key)
         for entry in raw_entries:
@@ -144,7 +144,11 @@ class DirectoryScanner:
                 continue
             entry_path = Path(entry.path)
             rel_child = _join_rel(rel_path, name)
-            if entry.is_dir(follow_symlinks=False):
+            try:
+                is_directory = entry.is_dir(follow_symlinks=False)
+            except OSError:
+                continue
+            if is_directory:
                 if name in self.filters.dir_ignores:
                     continue
                 if self._matches_pattern(rel_child, self.filters.exclude_patterns, True):
@@ -153,40 +157,51 @@ class DirectoryScanner:
                 if child_node is None:
                     continue
                 entries.append(child_node)
-            elif entry.is_file(follow_symlinks=False):
-                if not self.filters.include_files:
-                    continue
-                if name in self.filters.file_ignores:
-                    continue
-                ext = entry_path.suffix
-                if ext and ext in self.filters.file_ignores:
-                    continue
-                if self._matches_pattern(rel_child, self.filters.exclude_patterns, False):
-                    continue
-                if self.filters.include_patterns and not self._matches_pattern(
-                    rel_child, self.filters.include_patterns, False
-                ):
-                    continue
+                continue
+            try:
+                is_file = entry.is_file(follow_symlinks=False)
+            except OSError:
+                continue
+            if not is_file or not self.filters.include_files:
+                continue
+            if name in self.filters.file_ignores:
+                continue
+            ext = entry_path.suffix
+            if ext and ext in self.filters.file_ignores:
+                continue
+            if self._matches_pattern(rel_child, self.filters.exclude_patterns, False):
+                continue
+            if self.filters.include_patterns and not self._matches_pattern(
+                rel_child, self.filters.include_patterns, False
+            ):
+                continue
+            try:
                 stat_info = entry.stat(follow_symlinks=False)
-                entries.append(
-                    DirectoryNode(
-                        name=name,
-                        path=str(entry_path),
-                        is_dir=False,
-                        size=stat_info.st_size,
-                        mtime=stat_info.st_mtime,
-                    )
+            except OSError:
+                continue
+            entries.append(
+                DirectoryNode(
+                    name=name,
+                    path=str(entry_path),
+                    is_dir=False,
+                    size=stat_info.st_size,
+                    mtime=stat_info.st_mtime,
                 )
+            )
         return entries
 
     def _scan_directory_node(self, path: Path, depth: int, rel_path: str) -> Optional[DirectoryNode]:
         next_depth = depth + 1
-        stat_info = path.stat()
+        try:
+            stat_info = path.stat()
+            mtime = stat_info.st_mtime
+        except OSError:
+            mtime = None
         node = DirectoryNode(
             name=path.name or str(path),
             path=str(path),
             is_dir=True,
-            mtime=stat_info.st_mtime,
+            mtime=mtime,
         )
         if self.filters.max_depth is not None and depth >= self.filters.max_depth:
             node.children = []
@@ -261,5 +276,8 @@ def _join_rel(parent: str, child: str) -> str:
 
 
 def _sort_key(entry: os.DirEntry) -> Tuple[int, str]:
-    is_dir = entry.is_dir(follow_symlinks=False)
+    try:
+        is_dir = entry.is_dir(follow_symlinks=False)
+    except OSError:
+        is_dir = False
     return (0 if is_dir else 1, entry.name.lower())
