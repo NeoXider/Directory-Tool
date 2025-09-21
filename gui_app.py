@@ -30,7 +30,7 @@ MAX_SEARCH_RESULTS = 500
 class GUIState:
     include_files: bool = True
     include_hidden: bool = False
-    max_depth: Optional[int] = None
+    max_depth: Optional[int] = 3
     include_patterns: Sequence[str] = ()
     exclude_patterns: Sequence[str] = ()
     skip_empty_dirs: bool = False
@@ -559,10 +559,11 @@ def launch_gui(start_path: Optional[Path], options: Dict[str, object]) -> int:
     _apply_dark_theme(app)
 
     root = (start_path or Path.cwd()).expanduser().resolve()
+    initial_max_depth = options.get("max_depth")
     gui_state = GUIState(
         include_files=bool(options.get("include_files", True)),
         include_hidden=bool(options.get("include_hidden", False)),
-        max_depth=options.get("max_depth"),
+        max_depth=3 if initial_max_depth is None else initial_max_depth,
         include_patterns=tuple(options.get("include_patterns", ())),
         exclude_patterns=tuple(options.get("exclude_patterns", ())),
         skip_empty_dirs=bool(options.get("skip_empty_dirs", False)),

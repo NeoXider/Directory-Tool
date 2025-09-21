@@ -113,12 +113,16 @@ class DirectoryScanner:
             raise FileNotFoundError(f"Путь не найден: {root}")
         if not root.is_dir():
             raise NotADirectoryError(f"Это не директория: {root}")
-        stat_info = root.stat()
+        try:
+            stat_info = root.stat()
+            root_mtime = stat_info.st_mtime
+        except OSError:
+            root_mtime = None
         node = DirectoryNode(
             name=root.name or str(root),
             path=str(root),
             is_dir=True,
-            mtime=stat_info.st_mtime,
+            mtime=root_mtime,
         )
         if self.filters.max_depth is not None and self.filters.max_depth <= 0:
             return node
