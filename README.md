@@ -1,5 +1,8 @@
 # Directory Tool Documentation
 Этот проект предоставляет профессиональный инструмент для просмотра структуры файловых проектов: одна консольная утилита `make.py` объединяет экспорт дерева, удобный PyQt5‑интерфейс и MCP‑сервер для интеграции с агентами.
+<img width="1094" height="752" alt="image" src="https://github.com/user-attachments/assets/4a6d2a6a-da80-4b00-8d1c-56a796184fa0" />
+<img width="1092" height="747" alt="image" src="https://github.com/user-attachments/assets/2df74b4a-cac7-4dd8-979a-eb3cf7209128" />
+<img width="1096" height="753" alt="image" src="https://github.com/user-attachments/assets/47e43228-d875-4358-b284-21c672e7071a" />
 
 ## Коротко
 `make.py` — единый вход для трёх режимов: экспорт структуры в текст, просмотр через PyQt5 GUI и публикация через MCP сервер. Все режимы делят общий сканер (`tree_core.py`), поэтому фильтры, формат дерева и результаты поиска совпадают.
